@@ -39,7 +39,7 @@ export function BusFinder() {
   return (
     <main>
       <header className="nav shell">
-        <a className="brand" href="#" aria-label="NOLU ホーム"><span>N</span>NOLU <small>高速バス</small></a>
+        <a className="brand" href="#" aria-label="NOLU ホーム"><span>N</span>NOLU <small>by BUSSELECT</small></a>
         <nav aria-label="メインナビゲーション">
           <a href="#ranking">ランキング</a><a href="#reviews">みんなの乗車記</a><a href="#guide">旅のガイド</a>
         </nav>
@@ -59,7 +59,7 @@ export function BusFinder() {
               <label><small>到着地</small><input value={to} onChange={e => setTo(e.target.value)} aria-label="到着地" /></label>
               <label><small>乗車日</small><input type="date" defaultValue="2026-08-08" aria-label="乗車日" /></label>
               <label><small>人数</small><select aria-label="人数"><option>大人 1名</option><option>大人 2名</option></select></label>
-              <button className="search-btn" onClick={() => setSearched(true)}>比較する <span>→</span></button>
+              <button className="search-btn" onClick={() => { setSearched(true); window.location.href = `/search?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&date=2026-08-08`; }}>比較する <span>→</span></button>
             </div>
             <div className="quick"><span>人気:</span><button onClick={() => {setFrom("東京");setTo("大阪")}}>東京 → 大阪</button><button onClick={() => {setFrom("東京");setTo("名古屋")}}>東京 → 名古屋</button><button onClick={() => {setFrom("大阪");setTo("福岡")}}>大阪 → 福岡</button></div>
           </div>

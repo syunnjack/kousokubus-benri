@@ -1,11 +1,15 @@
 import { requireChatGPTUser } from "../../chatgpt-auth";
 import { getD1 } from "../../../db/d1";
 import { ReviewQueue } from "./review-queue";
+import { isNoluAdmin } from "../../admin-auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminReviewsPage() {
   const user = await requireChatGPTUser("/admin/reviews");
+  if (!isNoluAdmin(user)) {
+    return <main className="admin-page"><section><h1>アクセスできません</h1><p>この画面はNOLU運営者専用です。</p><a href="/">サイトへ戻る</a></section></main>;
+  }
   const result = await getD1().prepare(`
     SELECT rv.id, rv.display_name AS displayName, rv.rating, rv.body,
       rv.ride_date AS rideDate, rv.created_at AS createdAt,

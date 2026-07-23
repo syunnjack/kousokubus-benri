@@ -1,9 +1,11 @@
 import { getChatGPTUser } from "../../../../chatgpt-auth";
 import { getD1, jsonError } from "../../../../../db/d1";
+import { isNoluAdmin } from "../../../../admin-auth";
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   const user = await getChatGPTUser();
   if (!user) return jsonError("Sign in is required", 401);
+  if (!isNoluAdmin(user)) return jsonError("Administrator access is required", 403);
   const { id } = await context.params;
   const body = await request.json().catch(() => null) as { status?: string } | null;
   if (!body || !["published", "rejected"].includes(body.status || "")) {

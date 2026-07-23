@@ -71,3 +71,13 @@ export const onwardSearches = sqliteTable("onward_searches", {
 }, (table) => [
   index("onward_destination_idx").on(table.arrivalStop, table.finalDestination),
 ]);
+
+export const outboundClicks = sqliteTable("outbound_clicks", {
+  id: text("id").primaryKey(),
+  serviceId: text("service_id").notNull().references(() => services.id),
+  visitorEmail: text("visitor_email"),
+  source: text("source").notNull().default("search"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+}, (table) => [
+  index("outbound_clicks_service_idx").on(table.serviceId, table.createdAt),
+]);

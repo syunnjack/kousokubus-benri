@@ -29,6 +29,13 @@
       "when": 1784790584094,
       "tag": "0003_add-service-import-fields",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1784796864403,
+      "tag": "0004_add-feed-operations",
+      "breakpoints": true
     }
   ]
 }

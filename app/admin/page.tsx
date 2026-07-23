@@ -15,7 +15,7 @@ export default async function AdminDashboard() {
   return (
     <main className="admin-page">
       <header><a className="brand" href="/"><span>N</span>NOLU</a><div><small>運営者</small><b>{user.displayName}</b></div></header>
-      <section><span className="kicker">BUSSELECT CONTROL</span><h1>運営ダッシュボード</h1><nav className="admin-tabs"><a href="/admin/services">便データ管理</a><a href="/admin/reviews">レビュー審査</a></nav>
+      <section><span className="kicker">BUSSELECT CONTROL</span><h1>運営ダッシュボード</h1><nav className="admin-tabs"><a href="/admin/services">便データ管理</a><a href="/admin/feeds">データフィード</a><a href="/admin/reviews">レビュー審査</a></nav>
         <div className="metric-grid">
           <article><small>予約送客クリック</small><strong>{summary?.clicks || 0}</strong></article>
           <article><small>公開レビュー</small><strong>{summary?.publishedReviews || 0}</strong></article>

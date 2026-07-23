@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   if (!user) return jsonError("Sign in is required", 401);
   if (!isNoluAdmin(user)) return jsonError("Administrator access is required", 403);
 
-  const body = await request.json().catch(() => null) as { rows?: ImportRow[] } | null;
+  const body = await request.json().catch(() => null) as { rows?: ImportRow[]; fileName?: unknown } | null;
   if (!Array.isArray(body?.rows) || body.rows.length === 0) return jsonError("rows is required", 400);
   if (body.rows.length > 500) return jsonError("一度に取り込めるのは500件までです", 422);
 
@@ -59,7 +59,12 @@ export async function POST(request: Request) {
       valid.push(parsed);
     }
   });
-  if (!valid.length) return Response.json({ ok: false, inserted: 0, updated: 0, errors }, { status: 422 });
+  const sourceKey = valid[0]?.source || asString(body.rows[0]?.source, 50) || "csv";
+  const fileName = asString(body.fileName, 160) || null;
+  if (!valid.length) {
+    await logRun(sourceKey, fileName, body.rows.length, 0, 0, errors, user.email);
+    return Response.json({ ok: false, inserted: 0, updated: 0, errors }, { status: 422 });
+  }
 
   const db = getD1();
   let inserted = 0;
@@ -96,7 +101,20 @@ export async function POST(request: Request) {
     await db.batch(statements);
   }
 
+  await logRun(sourceKey, fileName, body.rows.length, inserted, updated, errors, user.email);
   return Response.json({ ok: errors.length === 0, inserted, updated, errors });
+}
+
+async function logRun(sourceKey: string, fileName: string | null, total: number, inserted: number, updated: number, errors: { row: number; message: string }[], email: string | undefined) {
+  const db = getD1();
+  const status = errors.length === total ? "failed" : errors.length ? "partial" : "success";
+  const now = Date.now();
+  await db.batch([
+    db.prepare(`INSERT INTO import_runs (id, source_key, file_name, status, total_rows, inserted_rows, updated_rows, error_rows, error_summary, imported_by, created_at)
+      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)`)
+      .bind(crypto.randomUUID(), sourceKey, fileName, status, total, inserted, updated, errors.length, JSON.stringify(errors.slice(0, 20)), email || null, now),
+    db.prepare("UPDATE feed_sources SET last_imported_at = ?1 WHERE source_key = ?2").bind(now, sourceKey),
+  ]);
 }
 
 function validate(row: ImportRow): ValidRow | string {

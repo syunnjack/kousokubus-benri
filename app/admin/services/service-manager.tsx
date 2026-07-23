@@ -52,7 +52,7 @@ export function ServiceManager({ initialServices }: { initialServices: Service[]
     if (!csvRows.length || importing) return;
     setImporting(true);
     setMessage("CSVを取り込み中…");
-    const response = await fetch("/api/admin/import/services", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ rows: csvRows }) });
+    const response = await fetch("/api/admin/import/services", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ rows: csvRows, fileName: csvName }) });
     const data = await response.json();
     const errorSummary = Array.isArray(data.errors) && data.errors.length ? ` エラー${data.errors.length}件（${data.errors.slice(0, 3).map((item: { row: number; message: string }) => `${item.row}行目: ${item.message}`).join("／")}）` : "";
     setMessage(response.ok || data.inserted || data.updated ? `新規${data.inserted || 0}件、更新${data.updated || 0}件。${errorSummary}` : data.error || errorSummary || "取り込めませんでした。");

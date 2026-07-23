@@ -85,3 +85,35 @@ export const outboundClicks = sqliteTable("outbound_clicks", {
 }, (table) => [
   index("outbound_clicks_service_idx").on(table.serviceId, table.createdAt),
 ]);
+
+export const feedSources = sqliteTable("feed_sources", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  sourceKey: text("source_key").notNull(),
+  feedType: text("feed_type", { enum: ["csv", "api", "sftp"] }).notNull().default("csv"),
+  endpointUrl: text("endpoint_url"),
+  schedule: text("schedule").notNull().default("manual"),
+  secretEnvName: text("secret_env_name"),
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  lastImportedAt: integer("last_imported_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+}, (table) => [
+  uniqueIndex("feed_sources_source_key_idx").on(table.sourceKey),
+]);
+
+export const importRuns = sqliteTable("import_runs", {
+  id: text("id").primaryKey(),
+  sourceKey: text("source_key").notNull(),
+  fileName: text("file_name"),
+  status: text("status", { enum: ["success", "partial", "failed"] }).notNull(),
+  totalRows: integer("total_rows").notNull().default(0),
+  insertedRows: integer("inserted_rows").notNull().default(0),
+  updatedRows: integer("updated_rows").notNull().default(0),
+  errorRows: integer("error_rows").notNull().default(0),
+  errorSummary: text("error_summary"),
+  importedBy: text("imported_by"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+}, (table) => [
+  index("import_runs_created_idx").on(table.createdAt),
+  index("import_runs_source_idx").on(table.sourceKey, table.createdAt),
+]);

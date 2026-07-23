@@ -24,6 +24,7 @@ export function BusFinder() {
   const [votes, setVotes] = useState<Record<number, number>>({});
   const [arrivalSpot, setArrivalSpot] = useState("ユニバーサル・スタジオ・ジャパン");
   const [routeMode, setRouteMode] = useState("早い");
+  const [onwardMessage, setOnwardMessage] = useState("交通データ連携デモ");
 
   const ordered = useMemo(() => {
     if (priority === "快眠") return [...buses].sort((a, b) => b.sleep - a.sleep);
@@ -35,6 +36,17 @@ export function BusFinder() {
     setFrom(to);
     setTo(from);
   };
+
+  async function searchOnward() {
+    setOnwardMessage("検索中…");
+    const preference = routeMode === "安い" ? "cheap" : routeMode === "歩かない" ? "low_walk" : "fast";
+    const response = await fetch("/api/onward", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ arrivalStop: "大阪駅 JR高速バスターミナル", finalDestination: arrivalSpot, preference }),
+    });
+    const data = await response.json();
+    setOnwardMessage(response.ok ? (data.provider === "navitime" ? "NAVITIME実データ" : "デモ経路・検索履歴を保存済み") : "検索できませんでした");
+  }
 
   return (
     <main>
@@ -92,14 +104,14 @@ export function BusFinder() {
         <div className="shell">
           <div className="section-head">
             <div><span className="kicker">AFTER ARRIVAL</span><h2>バスを降りてからも、迷わない。</h2><p>到着時刻に合わせて、最終目的地までのルートと交通費を比較します。</p></div>
-            <span className="data-label">交通データ連携デモ</span>
+            <span className="data-label">{onwardMessage}</span>
           </div>
           <div className="onward-panel">
             <div className="onward-search">
               <label><small>バス降車地</small><b>大阪駅 JR高速バスターミナル</b><span>06:30 到着予定</span></label>
               <span className="chevron">›</span>
               <label><small>最終目的地</small><input value={arrivalSpot} onChange={e => setArrivalSpot(e.target.value)} aria-label="最終目的地" /><span>観光地・ホテル・住所から検索</span></label>
-              <button>ルート検索</button>
+              <button onClick={searchOnward}>ルート検索</button>
             </div>
             <div className="route-tabs" role="group" aria-label="ルートの優先条件">
               {["早い","安い","歩かない"].map(m => <button key={m} className={routeMode === m ? "active":""} onClick={() => setRouteMode(m)}>{m === "早い" ? "最短" : m}</button>)}

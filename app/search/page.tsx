@@ -25,7 +25,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
       s.departure_time AS departureTime, s.arrival_time AS arrivalTime,
       s.seat_type AS seatType, s.base_price AS basePrice,
       s.sleep_score AS sleepScore, s.on_time_rate AS onTimeRate,
-      s.booking_url AS bookingUrl,
+      s.booking_url AS bookingUrl, s.sales_status AS salesStatus, s.available_seats AS availableSeats,
       ROUND(AVG(rv.rating), 1) AS reviewScore, COUNT(rv.id) AS reviewCount
     FROM services s
     JOIN routes r ON r.id = s.route_id
@@ -52,7 +52,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
           {buses.map((bus, index) => <article key={String(bus.id)}>
             <div className="result-rank">{index + 1}</div>
             <div className="result-main"><small>{String(bus.operatorName)}</small><h2>{String(bus.serviceName)}</h2><div className="result-time"><b>{String(bus.departureTime)}</b><span>{from}　━━━━　{to}</span><b>{String(bus.arrivalTime)}</b></div><div className="result-tags"><span>{String(bus.seatType)}</span><span>快眠 {String(bus.sleepScore)}</span><span>定時 {Math.round(Number(bus.onTimeRate) * 100)}%</span><span>★ {String(bus.reviewScore || "—")}（{String(bus.reviewCount)}件）</span></div></div>
-            <div className="result-price"><small>片道・税込</small><strong>¥{Number(bus.basePrice).toLocaleString()}</strong><a href={`/go/${String(bus.id)}?source=search`}>{bus.bookingUrl ? "予約サイトへ" : "予約連携準備中"}</a></div>
+            <div className="result-price"><small>{bus.salesStatus === "sold_out" ? "満席" : bus.availableSeats !== null && bus.availableSeats !== undefined ? `残り${String(bus.availableSeats)}席` : "片道・税込"}</small><strong>¥{Number(bus.basePrice).toLocaleString()}</strong><a href={`/go/${String(bus.id)}?source=search`}>{bus.salesStatus === "sold_out" ? "満席・ほかの便を見る" : bus.bookingUrl ? "予約サイトへ" : "予約連携準備中"}</a></div>
           </article>)}
           {!buses.length && <div className="no-results"><h2>条件に合う便がまだありません</h2><p>現在は東京→大阪のサンプル便を公開しています。データ提携後、全国の路線へ拡大します。</p></div>}
         </div>

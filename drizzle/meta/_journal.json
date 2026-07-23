@@ -36,6 +36,13 @@
       "when": 1784796864403,
       "tag": "0004_add-feed-operations",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1784797587487,
+      "tag": "0005_add-live-availability",
+      "breakpoints": true
     }
   ]
 }

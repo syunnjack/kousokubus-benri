@@ -27,6 +27,9 @@ export const services = sqliteTable("services", {
   sleepScore: integer("sleep_score"),
   onTimeRate: real("on_time_rate"),
   bookingUrl: text("booking_url"),
+  salesStatus: text("sales_status", { enum: ["on_sale", "sold_out", "ended", "unknown"] }).notNull().default("unknown"),
+  availableSeats: integer("available_seats"),
+  fareUpdatedAt: integer("fare_updated_at", { mode: "timestamp" }),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 }, (table) => [
   uniqueIndex("services_external_key_idx").on(table.externalKey),

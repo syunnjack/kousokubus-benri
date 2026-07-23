@@ -24,6 +24,14 @@ export function FeedManager({ initialFeeds }: { initialFeeds: Feed[] }) {
     setFeeds((items) => items.map((item) => item.id === feed.id ? { ...item, enabled: enabled ? 1 : 0 } : item));
     setMessage(`${feed.name}を${enabled ? "有効" : "停止"}にしました。`);
   }
+  async function sync(feed: Feed) {
+    setMessage(`${feed.name}を同期中…`);
+    const response = await fetch(`/api/admin/feeds/${feed.id}/sync`, { method: "POST" });
+    const data = await response.json();
+    if (!response.ok) return setMessage(data.error || "同期に失敗しました。");
+    setMessage(`${feed.name}: 全${data.total}件、新規${data.inserted}件、更新${data.updated}件、エラー${data.errors?.length || 0}件`);
+    setFeeds((items) => items.map((item) => item.id === feed.id ? { ...item, lastImportedAt: Date.now() } : item));
+  }
   return <>
     <form className="feed-create" onSubmit={create}>
       <div><span className="kicker">NEW SOURCE</span><h2>データ提供元を登録</h2><p>APIキー自体は保存せず、本番環境のシークレット名だけを管理します。</p></div>
@@ -41,7 +49,8 @@ export function FeedManager({ initialFeeds }: { initialFeeds: Feed[] }) {
     <div className="feed-list">{feeds.length ? feeds.map((feed) => <article key={feed.id}>
       <header><div><small>{feed.feedType.toUpperCase()}・{feed.schedule}</small><h3>{feed.name}</h3><code>{feed.sourceKey}</code></div><span className={feed.enabled ? "feed-live" : "feed-off"}>{feed.enabled ? "有効" : "停止中"}</span></header>
       <dl><div><dt>接続先</dt><dd>{feed.endpointUrl || "未設定"}</dd></div><div><dt>認証設定</dt><dd>{feed.secretEnvName || "不要・未設定"}</dd></div><div><dt>最終取込</dt><dd>{feed.lastImportedAt ? new Date(feed.lastImportedAt).toLocaleString("ja-JP") : "まだありません"}</dd></div></dl>
-      <button type="button" className={feed.enabled ? "stop" : ""} onClick={() => toggle(feed)}>{feed.enabled ? "一時停止" : "有効にする"}</button>
+      <footer>{feed.feedType === "api" && <button type="button" disabled={!feed.enabled || !feed.endpointUrl} onClick={() => sync(feed)}>今すぐ同期</button>}<button type="button" className={feed.enabled ? "stop" : ""} onClick={() => toggle(feed)}>{feed.enabled ? "一時停止" : "有効にする"}</button></footer>
     </article>) : <p className="admin-empty">データ提供元はまだ登録されていません。</p>}</div>
+    <aside className="feed-contract"><span className="kicker">API CONTRACT</span><h2>対応するレスポンス形式</h2><p>JSON配列、または <code>{`{ "services": [...] }`}</code> を受け取ります。必須項目はCSVと共通です。空席同期には <code>salesStatus</code>（on_sale / sold_out / ended / unknown）と <code>availableSeats</code> を追加します。</p></aside>
   </>;
 }

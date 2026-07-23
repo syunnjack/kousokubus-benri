@@ -6,10 +6,13 @@ import { getD1, jsonError } from "../../../../../../db/d1";
 type FeedRow = Record<string, unknown>;
 type ParsedRow = { externalKey: string; originName: string; destinationName: string; routeSlug: string; operatorName: string; serviceName: string; departureTime: string; arrivalTime: string; seatType: string | null; basePrice: number; sleepScore: number | null; onTimeRate: number | null; bookingUrl: string | null; salesStatus: string; availableSeats: number | null };
 
-export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const user = await getChatGPTUser();
-  if (!user) return jsonError("Sign in is required", 401);
-  if (!isNoluAdmin(user)) return jsonError("Administrator access is required", 403);
+  const cronSecret = (env as unknown as Record<string, unknown>).NOLU_CRON_SECRET;
+  const cronAuthorized = typeof cronSecret === "string" && cronSecret.length >= 32 && request.headers.get("authorization") === `Bearer ${cronSecret}`;
+  if (!user && !cronAuthorized) return jsonError("Sign in is required", 401);
+  if (user && !isNoluAdmin(user)) return jsonError("Administrator access is required", 403);
+  const actor = cronAuthorized ? "scheduler" : user?.email || "admin";
   const { id } = await context.params;
   const db = getD1();
   const feed = await db.prepare(`SELECT name, source_key AS sourceKey, endpoint_url AS endpointUrl, secret_env_name AS secretEnvName, enabled, feed_type AS feedType FROM feed_sources WHERE id = ?1`)
@@ -59,13 +62,13 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
     }
     const status = errors.length === rows.length ? "failed" : errors.length ? "partial" : "success";
     await db.batch([
-      db.prepare(`INSERT INTO import_runs (id, source_key, file_name, status, total_rows, inserted_rows, updated_rows, error_rows, error_summary, imported_by, created_at) VALUES (?1, ?2, 'API sync', ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`).bind(runId, feed.sourceKey, status, rows.length, inserted, updated, errors.length, JSON.stringify(errors.slice(0, 20)), user.email || null, now),
+      db.prepare(`INSERT INTO import_runs (id, source_key, file_name, status, total_rows, inserted_rows, updated_rows, error_rows, error_summary, imported_by, created_at) VALUES (?1, ?2, 'API sync', ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`).bind(runId, feed.sourceKey, status, rows.length, inserted, updated, errors.length, JSON.stringify(errors.slice(0, 20)), actor, now),
       db.prepare("UPDATE feed_sources SET last_imported_at = ?1 WHERE id = ?2").bind(now, id),
     ]);
     return Response.json({ ok: status === "success", status, total: rows.length, inserted, updated, errors });
   } catch (error) {
     const message = error instanceof Error ? error.message.slice(0, 300) : "同期に失敗しました";
-    await db.prepare(`INSERT INTO import_runs (id, source_key, file_name, status, total_rows, error_rows, error_summary, imported_by, created_at) VALUES (?1, ?2, 'API sync', 'failed', 0, 1, ?3, ?4, ?5)`).bind(runId, feed.sourceKey, JSON.stringify([{ message }]), user.email || null, now).run();
+    await db.prepare(`INSERT INTO import_runs (id, source_key, file_name, status, total_rows, error_rows, error_summary, imported_by, created_at) VALUES (?1, ?2, 'API sync', 'failed', 0, 1, ?3, ?4, ?5)`).bind(runId, feed.sourceKey, JSON.stringify([{ message }]), actor, now).run();
     return jsonError(message, 502);
   }
 }

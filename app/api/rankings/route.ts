@@ -12,7 +12,7 @@ export async function GET() {
     FROM services s
     JOIN routes r ON r.id = s.route_id
     LEFT JOIN reviews rv ON rv.service_id = s.id AND rv.status = 'published'
-    WHERE r.active = 1
+    WHERE r.active = 1 AND s.active = 1
     GROUP BY s.id
     ORDER BY
       (COALESCE(AVG(rv.rating), 0) * 12 + COALESCE(s.sleep_score, 0) * 0.4

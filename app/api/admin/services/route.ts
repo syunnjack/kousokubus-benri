@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   const serviceId = `service-${routeSlug}-${crypto.randomUUID().slice(0, 8)}`;
   await db.batch([
     db.prepare(`INSERT OR IGNORE INTO routes (id, origin_name, destination_name, active, created_at) VALUES (?1, ?2, ?3, 1, ?4)`).bind(routeId, originName, destinationName, Date.now()),
-    db.prepare(`INSERT INTO services (id, route_id, operator_name, service_name, departure_time, arrival_time, seat_type, base_price, sleep_score, on_time_rate, booking_url, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`).bind(serviceId, routeId, operatorName, serviceName, departureTime, arrivalTime, seatType || null, basePrice, sleepScore, onTimeRate / 100, bookingUrl, Date.now()),
+    db.prepare(`INSERT INTO services (id, source, active, route_id, operator_name, service_name, departure_time, arrival_time, seat_type, base_price, sleep_score, on_time_rate, booking_url, updated_at) VALUES (?1, 'manual', 1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`).bind(serviceId, routeId, operatorName, serviceName, departureTime, arrivalTime, seatType || null, basePrice, sleepScore, onTimeRate / 100, bookingUrl, Date.now()),
   ]);
   return Response.json({ ok: true, serviceId, routeId }, { status: 201 });
 }

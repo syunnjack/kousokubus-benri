@@ -5,7 +5,7 @@ export async function GET(request: Request, context: { params: Promise<{ service
   const { serviceId } = await context.params;
   const url = new URL(request.url);
   const service = await getD1()
-    .prepare("SELECT booking_url AS bookingUrl FROM services WHERE id = ?1")
+    .prepare("SELECT booking_url AS bookingUrl FROM services WHERE id = ?1 AND active = 1")
     .bind(serviceId)
     .first<{ bookingUrl: string | null }>();
   if (!service) return new Response("Not found", { status: 404 });

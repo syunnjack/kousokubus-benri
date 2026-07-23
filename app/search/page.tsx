@@ -30,7 +30,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
     FROM services s
     JOIN routes r ON r.id = s.route_id
     LEFT JOIN reviews rv ON rv.service_id = s.id AND rv.status = 'published'
-    WHERE r.origin_name = ?1 AND r.destination_name = ?2 AND r.active = 1
+    WHERE r.origin_name = ?1 AND r.destination_name = ?2 AND r.active = 1 AND s.active = 1
     GROUP BY s.id
     ORDER BY ${order}
   `).bind(from, to).all();

@@ -14,6 +14,9 @@ export const routes = sqliteTable("routes", {
 
 export const services = sqliteTable("services", {
   id: text("id").primaryKey(),
+  externalKey: text("external_key"),
+  source: text("source").notNull().default("manual"),
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
   routeId: text("route_id").notNull().references(() => routes.id),
   operatorName: text("operator_name").notNull(),
   serviceName: text("service_name").notNull(),
@@ -26,6 +29,7 @@ export const services = sqliteTable("services", {
   bookingUrl: text("booking_url"),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 }, (table) => [
+  uniqueIndex("services_external_key_idx").on(table.externalKey),
   index("services_route_idx").on(table.routeId),
   index("services_price_idx").on(table.basePrice),
 ]);

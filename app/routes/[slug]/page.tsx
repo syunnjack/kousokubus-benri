@@ -36,7 +36,7 @@ export default async function RouteDetailPage({ params }: { params: Params }) {
       ROUND(AVG(rv.rating), 1) AS reviewScore, COUNT(rv.id) AS reviewCount
     FROM services s
     LEFT JOIN reviews rv ON rv.service_id = s.id AND rv.status = 'published'
-    WHERE s.route_id = ?1 GROUP BY s.id ORDER BY s.base_price ASC
+    WHERE s.route_id = ?1 AND s.active = 1 GROUP BY s.id ORDER BY s.base_price ASC
   `).bind(String(route.id)).all();
   const rows = services.results as Record<string, unknown>[];
   const minPrice = Math.min(...rows.map((row) => Number(row.basePrice)));

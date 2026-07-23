@@ -1,4 +1,5 @@
 import { asString, getD1, jsonError } from "../../../db/d1";
+import { getChatGPTUser } from "../../chatgpt-auth";
 
 export async function GET(request: Request) {
   const serviceId = new URL(request.url).searchParams.get("serviceId");
@@ -23,12 +24,14 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const user = await getChatGPTUser();
+  if (!user) return jsonError("Sign in is required", 401);
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   if (!body) return jsonError("Invalid JSON", 400);
 
   const serviceId = asString(body.serviceId, 80);
-  const visitorId = asString(body.visitorId, 100);
-  const displayName = asString(body.displayName, 40);
+  const visitorId = user.email;
+  const displayName = asString(body.displayName, 40) || user.displayName;
   const reviewBody = asString(body.body, 1200);
   const rating = Number(body.rating);
   if (!serviceId || !visitorId || !displayName || reviewBody.length < 20) {

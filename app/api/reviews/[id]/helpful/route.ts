@@ -1,9 +1,11 @@
-import { asString, getD1, jsonError } from "../../../../../db/d1";
+import { getD1, jsonError } from "../../../../../db/d1";
+import { getChatGPTUser } from "../../../../chatgpt-auth";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+  const user = await getChatGPTUser();
+  if (!user) return jsonError("Sign in is required", 401);
   const { id: reviewId } = await context.params;
-  const body = await request.json().catch(() => null) as Record<string, unknown> | null;
-  const visitorId = asString(body?.visitorId, 100);
+  const visitorId = user.email;
   if (!reviewId || !visitorId) return jsonError("review id and visitorId are required", 400);
 
   const db = getD1();

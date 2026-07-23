@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ReviewHub } from "./review-hub";
 
 const buses = [
   { name: "グランドリーム 7号", company: "JRバス", price: 6200, score: 4.6, sleep: 92, delay: "定時 89%", seats: "独立3列", tags: ["仕切りカーテン", "USB-C", "トイレ"], accent: "best" },
@@ -137,12 +138,7 @@ export function BusFinder() {
         </div>
       </section>
 
-      <section className="shell review-section" id="reviews">
-        <div className="section-head"><div><span className="kicker">REAL VOICES</span><h2>昨夜、乗った人の声。</h2></div><button className="outline">乗車記をもっと見る →</button></div>
-        <div className="review-grid">
-          {reviews.map((r, i) => <article key={r.user}><div className="review-meta"><span className="avatar">{r.user[0]}</span><div><b>{r.user}</b><small>{r.badge}</small></div><strong>★ {r.score}</strong></div><p>「{r.text}」</p><div><span>{r.route}</span><button onClick={() => setVotes(v => ({...v,[i]:(v[i]||r.helpful)+1}))}>♡ 参考になった {votes[i] || r.helpful}</button></div></article>)}
-        </div>
-      </section>
+      <ReviewHub fallbackReviews={reviews} />
 
       <section className="shell insight" id="guide">
         <div><span className="kicker">NOLU INSIGHT</span><h2>データでわかる、<br />今月の高速バス。</h2><p>みんなの投票と乗車データから、季節ごとの<br />“失敗しない選び方”を編集部が解説します。</p><button>最新レポートを読む →</button></div>

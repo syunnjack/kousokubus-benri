@@ -85,6 +85,10 @@ export async function POST(request: Request) {
           VALUES (?1, ?2, ?3, 1, ?4)
           ON CONFLICT(id) DO UPDATE SET origin_name=excluded.origin_name, destination_name=excluded.destination_name, active=1`)
           .bind(routeId, row.originName, row.destinationName, Date.now()),
+        db.prepare(`INSERT INTO service_snapshots (id, external_key, route_id, source, base_price, sales_status, available_seats, captured_at)
+          SELECT ?1, ?2, ?3, ?4, ?5, 'unknown', NULL, ?6
+          WHERE NOT EXISTS (SELECT 1 FROM service_snapshots WHERE external_key = ?2 AND base_price = ?5 AND sales_status = 'unknown' AND available_seats IS NULL ORDER BY captured_at DESC LIMIT 1)`)
+          .bind(crypto.randomUUID(), row.externalKey, routeId, row.source, row.basePrice, Date.now()),
         db.prepare(`INSERT INTO services
           (id, external_key, source, active, route_id, operator_name, service_name, departure_time, arrival_time, seat_type, base_price, sleep_score, on_time_rate, booking_url, updated_at)
           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)

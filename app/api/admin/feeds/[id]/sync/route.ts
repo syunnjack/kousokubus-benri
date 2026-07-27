@@ -53,6 +53,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         const routeId = `route-${row.routeSlug}`;
         return [
           db.prepare(`INSERT INTO routes (id, origin_name, destination_name, active, created_at) VALUES (?1, ?2, ?3, 1, ?4) ON CONFLICT(id) DO UPDATE SET origin_name=excluded.origin_name, destination_name=excluded.destination_name, active=1`).bind(routeId, row.originName, row.destinationName, now),
+          db.prepare(`INSERT INTO service_snapshots (id, external_key, route_id, source, base_price, sales_status, available_seats, captured_at)
+            SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8
+            WHERE NOT EXISTS (SELECT 1 FROM service_snapshots WHERE external_key = ?2 AND base_price = ?5 AND sales_status = ?6 AND COALESCE(available_seats, -1) = COALESCE(?7, -1) ORDER BY captured_at DESC LIMIT 1)`)
+            .bind(crypto.randomUUID(), row.externalKey, routeId, feed.sourceKey, row.basePrice, row.salesStatus, row.availableSeats, now),
           db.prepare(`INSERT INTO services (id, external_key, source, active, route_id, operator_name, service_name, departure_time, arrival_time, seat_type, base_price, sleep_score, on_time_rate, booking_url, sales_status, available_seats, fare_updated_at, updated_at)
             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)
             ON CONFLICT(external_key) DO UPDATE SET source=excluded.source, active=excluded.active, route_id=excluded.route_id, operator_name=excluded.operator_name, service_name=excluded.service_name, departure_time=excluded.departure_time, arrival_time=excluded.arrival_time, seat_type=excluded.seat_type, base_price=excluded.base_price, sleep_score=excluded.sleep_score, on_time_rate=excluded.on_time_rate, booking_url=excluded.booking_url, sales_status=excluded.sales_status, available_seats=excluded.available_seats, fare_updated_at=excluded.fare_updated_at, updated_at=excluded.updated_at`)

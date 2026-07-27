@@ -120,3 +120,17 @@ export const importRuns = sqliteTable("import_runs", {
   index("import_runs_created_idx").on(table.createdAt),
   index("import_runs_source_idx").on(table.sourceKey, table.createdAt),
 ]);
+
+export const serviceSnapshots = sqliteTable("service_snapshots", {
+  id: text("id").primaryKey(),
+  externalKey: text("external_key").notNull(),
+  routeId: text("route_id").notNull(),
+  source: text("source").notNull(),
+  basePrice: integer("base_price").notNull(),
+  salesStatus: text("sales_status").notNull().default("unknown"),
+  availableSeats: integer("available_seats"),
+  capturedAt: integer("captured_at", { mode: "timestamp" }).notNull(),
+}, (table) => [
+  index("service_snapshots_route_idx").on(table.routeId, table.capturedAt),
+  index("service_snapshots_service_idx").on(table.externalKey, table.capturedAt),
+]);

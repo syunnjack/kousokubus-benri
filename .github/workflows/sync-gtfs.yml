@@ -1,0 +1,48 @@
+name: Sync official GTFS feeds
+
+on:
+  schedule:
+    - cron: "37 18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nolu-gtfs-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Download and synchronize official GTFS feeds
+        env:
+          NOLU_BASE_URL: ${{ secrets.NOLU_CRON_URL }}
+          NOLU_CRON_SECRET: ${{ secrets.NOLU_CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${NOLU_BASE_URL:-}" ] || [ -z "${NOLU_CRON_SECRET:-}" ]; then
+            echo "GTFS synchronization is prepared but not activated."
+            exit 0
+          fi
+          mkdir -p .gtfs-sync
+          while IFS= read -r feed; do
+            key="$(jq -r '.sourceKey' <<<"$feed")"
+            url="$(jq -r '.feedUrl' <<<"$feed")"
+            root=".gtfs-sync/$key"
+            echo "Synchronizing $key"
+            mkdir -p "$root"
+            curl --fail-with-body --location --silent --show-error --retry 3 --retry-all-errors "$url" -o "$root.zip"
+            unzip -oq "$root.zip" -d "$root"
+            printf '%s' "$feed" > "$root.metadata.json"
+            node scripts/import-gtfs.mjs "$key" "$root" "$root.metadata.json"
+            if [ "$(jq -r '.highway // false' <<<"$feed")" = "true" ]; then
+              node scripts/import-highway-gtfs.mjs "$key" "$root" "$root.metadata.json"
+            fi
+          done < <(jq -c '.[]' data/gtfs-sources.json)

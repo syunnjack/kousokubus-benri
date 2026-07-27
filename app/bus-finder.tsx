@@ -53,7 +53,7 @@ export function BusFinder() {
       <header className="nav shell">
         <a className="brand" href="#" aria-label="NOLU ホーム"><span>N</span>NOLU <small>by BUSSELECT</small></a>
         <nav aria-label="メインナビゲーション">
-          <a href="#ranking">ランキング</a><a href="#reviews">みんなの乗車記</a><a href="#guide">旅のガイド</a>
+          <a href="/local-bus">路線バス時刻表</a><a href="#ranking">ランキング</a><a href="#reviews">みんなの乗車記</a><a href="#guide">旅のガイド</a>
         </nav>
         <button className="ghost">♡ 保存した便 <b>{saved.length}</b></button>
       </header>
@@ -158,7 +158,7 @@ export function BusFinder() {
       </section>
 
       <section className="newsletter"><div className="shell"><div><span>✦</span><h2>次の旅を、もっと賢く。</h2><p>値下がり通知、快眠便の新着、週末旅のアイデアを月2回だけ。</p></div><form onSubmit={e => e.preventDefault()}><input type="email" placeholder="メールアドレス" aria-label="メールアドレス" required /><button>無料で受け取る</button></form></div></section>
-      <footer className="shell footer"><a className="brand" href="#"><span>N</span>NOLU</a><p>高速バスの比較から、到着後まで。<br />移動を旅の“空白時間”にしない。</p><div><b>探す</b><a href="#">路線から探す</a><a href="#">バス会社から探す</a><a href="#">ランキング</a></div><div><b>NOLUについて</b><a href="#">評価の仕組み</a><a href="#">運営ポリシー</a><a href="#">事業者の方へ</a></div><small>© 2026 NOLU. All rights reserved.</small></footer>
+      <footer className="shell footer"><a className="brand" href="#"><span>N</span>NOLU</a><p>高速バスの比較から、到着後まで。<br />移動を旅の“空白時間”にしない。</p><div><b>探す</b><a href="/routes">高速バス路線</a><a href="/local-bus">路線バス時刻表</a><a href="#ranking">ランキング</a></div><div><b>NOLUについて</b><a href="#">評価の仕組み</a><a href="#">運営ポリシー</a><a href="#">事業者の方へ</a></div><small>© 2026 NOLU. All rights reserved.</small></footer>
     </main>
   );
 }

@@ -1,0 +1,7 @@
+[
+  { "sourceKey": "nouhibus", "feedName": "濃飛バス", "feedUrl": "https://api.gtfs-data.jp/v2/organizations/nouhibus/feeds/nouhibus/files/feed.zip", "pageUrl": "https://gtfs-data.jp/search?target_feed=nouhibus*nouhibus" },
+  { "sourceKey": "meikobus", "feedName": "明光バス", "feedUrl": "https://api.gtfs-data.jp/v2/organizations/meikobus/feeds/meikobus/files/feed.zip", "pageUrl": "https://gtfs-data.jp/search?target_feed=meikobus*meikobus" },
+  { "sourceKey": "ryujinbus", "feedName": "龍神自動車", "feedUrl": "https://api.gtfs-data.jp/v2/organizations/ryujinbus/feeds/ryujinbus/files/feed.zip", "pageUrl": "https://gtfs-data.jp/search?target_feed=ryujinbus*ryujinbus" },
+  { "sourceKey": "nagadenbus", "feedName": "長電バス（長野）", "feedUrl": "https://api.gtfs-data.jp/v2/organizations/nagadenbus/feeds/nagadenbus-nagano/files/feed.zip", "pageUrl": "https://gtfs-data.jp/search?target_feed=nagadenbus*nagadenbus-nagano" },
+  { "sourceKey": "toyotacity-kikanbus", "feedName": "豊田市基幹バス", "feedUrl": "https://api.gtfs-data.jp/v2/organizations/toyotacity/feeds/kikanbus/files/feed.zip", "pageUrl": "https://gtfs-data.jp/search?target_feed=toyotacity*kikanbus" }
+]

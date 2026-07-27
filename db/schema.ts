@@ -134,3 +134,107 @@ export const serviceSnapshots = sqliteTable("service_snapshots", {
   index("service_snapshots_route_idx").on(table.routeId, table.capturedAt),
   index("service_snapshots_service_idx").on(table.externalKey, table.capturedAt),
 ]);
+
+export const busAgencies = sqliteTable("bus_agencies", {
+  id: text("id").primaryKey(),
+  sourceKey: text("source_key").notNull(),
+  name: text("name").notNull(),
+  url: text("url"),
+  timezone: text("timezone").notNull().default("Asia/Tokyo"),
+  language: text("language").notNull().default("ja"),
+  licenseName: text("license_name"),
+  licenseUrl: text("license_url"),
+  attribution: text("attribution"),
+  feedUrl: text("feed_url"),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+}, (table) => [
+  index("bus_agencies_source_idx").on(table.sourceKey),
+]);
+
+export const busStops = sqliteTable("bus_stops", {
+  id: text("id").primaryKey(),
+  agencyId: text("agency_id").notNull().references(() => busAgencies.id),
+  name: text("name").notNull(),
+  code: text("code"),
+  description: text("description"),
+  latitude: real("latitude").notNull(),
+  longitude: real("longitude").notNull(),
+  locationType: integer("location_type").notNull().default(0),
+  parentStation: text("parent_station"),
+  wheelchairBoarding: integer("wheelchair_boarding"),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+}, (table) => [
+  index("bus_stops_agency_idx").on(table.agencyId),
+  index("bus_stops_name_idx").on(table.name),
+  index("bus_stops_geo_idx").on(table.latitude, table.longitude),
+]);
+
+export const busLines = sqliteTable("bus_lines", {
+  id: text("id").primaryKey(),
+  agencyId: text("agency_id").notNull().references(() => busAgencies.id),
+  shortName: text("short_name"),
+  longName: text("long_name"),
+  description: text("description"),
+  routeType: integer("route_type").notNull().default(3),
+  color: text("color"),
+  textColor: text("text_color"),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+}, (table) => [
+  index("bus_lines_agency_idx").on(table.agencyId),
+  index("bus_lines_name_idx").on(table.shortName, table.longName),
+]);
+
+export const busTrips = sqliteTable("bus_trips", {
+  id: text("id").primaryKey(),
+  lineId: text("line_id").notNull().references(() => busLines.id),
+  serviceId: text("service_id").notNull(),
+  headsign: text("headsign"),
+  shortName: text("short_name"),
+  directionId: integer("direction_id"),
+  wheelchairAccessible: integer("wheelchair_accessible"),
+  bikesAllowed: integer("bikes_allowed"),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+}, (table) => [
+  index("bus_trips_line_idx").on(table.lineId),
+  index("bus_trips_service_idx").on(table.serviceId),
+]);
+
+export const busStopTimes = sqliteTable("bus_stop_times", {
+  id: text("id").primaryKey(),
+  tripId: text("trip_id").notNull().references(() => busTrips.id),
+  stopId: text("stop_id").notNull().references(() => busStops.id),
+  arrivalTime: text("arrival_time").notNull(),
+  departureTime: text("departure_time").notNull(),
+  stopSequence: integer("stop_sequence").notNull(),
+  pickupType: integer("pickup_type").notNull().default(0),
+  dropOffType: integer("drop_off_type").notNull().default(0),
+  timepoint: integer("timepoint"),
+}, (table) => [
+  uniqueIndex("bus_stop_times_trip_sequence_idx").on(table.tripId, table.stopSequence),
+  index("bus_stop_times_stop_departure_idx").on(table.stopId, table.departureTime),
+]);
+
+export const busCalendars = sqliteTable("bus_calendars", {
+  id: text("id").primaryKey(),
+  monday: integer("monday").notNull().default(0),
+  tuesday: integer("tuesday").notNull().default(0),
+  wednesday: integer("wednesday").notNull().default(0),
+  thursday: integer("thursday").notNull().default(0),
+  friday: integer("friday").notNull().default(0),
+  saturday: integer("saturday").notNull().default(0),
+  sunday: integer("sunday").notNull().default(0),
+  startDate: text("start_date").notNull(),
+  endDate: text("end_date").notNull(),
+}, (table) => [
+  index("bus_calendars_dates_idx").on(table.startDate, table.endDate),
+]);
+
+export const busCalendarDates = sqliteTable("bus_calendar_dates", {
+  id: text("id").primaryKey(),
+  serviceId: text("service_id").notNull(),
+  date: text("date").notNull(),
+  exceptionType: integer("exception_type").notNull(),
+}, (table) => [
+  uniqueIndex("bus_calendar_dates_once_idx").on(table.serviceId, table.date),
+  index("bus_calendar_dates_date_idx").on(table.date),
+]);

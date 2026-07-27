@@ -238,3 +238,23 @@ export const busCalendarDates = sqliteTable("bus_calendar_dates", {
   uniqueIndex("bus_calendar_dates_once_idx").on(table.serviceId, table.date),
   index("bus_calendar_dates_date_idx").on(table.date),
 ]);
+
+export const highwayCatalog = sqliteTable("highway_catalog", {
+  id: text("id").primaryKey(),
+  sourceKey: text("source_key").notNull(),
+  externalKey: text("external_key").notNull(),
+  operatorName: text("operator_name").notNull(),
+  serviceName: text("service_name").notNull(),
+  originName: text("origin_name").notNull(),
+  destinationName: text("destination_name").notNull(),
+  departureTime: text("departure_time"),
+  arrivalTime: text("arrival_time"),
+  officialUrl: text("official_url").notNull(),
+  licenseName: text("license_name"),
+  licenseUrl: text("license_url"),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+}, (table) => [
+  uniqueIndex("highway_catalog_external_idx").on(table.externalKey),
+  index("highway_catalog_od_idx").on(table.originName, table.destinationName),
+  index("highway_catalog_source_idx").on(table.sourceKey),
+]);

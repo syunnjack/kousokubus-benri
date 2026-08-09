@@ -9,17 +9,27 @@ export const metadata: Metadata = {
 };
 
 type RouteRow = { id: string; originName: string; destinationName: string; serviceCount: number; minPrice: number; updatedAt: number };
+type HighwayRouteRow = { originName: string; destinationName: string; tripCount: number; operators: string };
 
 export default async function RoutesIndexPage() {
-  const result = await getD1().prepare(`
-    SELECT r.id, r.origin_name AS originName, r.destination_name AS destinationName,
-      COUNT(s.id) AS serviceCount, MIN(s.base_price) AS minPrice,
-      MAX(s.updated_at) AS updatedAt
-    FROM routes r JOIN services s ON s.route_id = r.id AND s.active = 1
-    WHERE r.active = 1
-    GROUP BY r.id ORDER BY r.origin_name, r.destination_name
-  `).all<RouteRow>();
+  const [result, highwayResult] = await Promise.all([
+    getD1().prepare(`
+      SELECT r.id, r.origin_name AS originName, r.destination_name AS destinationName,
+        COUNT(s.id) AS serviceCount, MIN(s.base_price) AS minPrice,
+        MAX(s.updated_at) AS updatedAt
+      FROM routes r JOIN services s ON s.route_id = r.id AND s.active = 1
+      WHERE r.active = 1
+      GROUP BY r.id ORDER BY r.origin_name, r.destination_name
+    `).all<RouteRow>(),
+    getD1().prepare(`
+      SELECT origin_name AS originName, destination_name AS destinationName,
+        COUNT(*) AS tripCount, GROUP_CONCAT(DISTINCT operator_name) AS operators
+      FROM highway_catalog
+      GROUP BY origin_name, destination_name ORDER BY tripCount DESC LIMIT 100
+    `).all<HighwayRouteRow>(),
+  ]);
   const routes = result.results || [];
+  const highwayRoutes = highwayResult.results || [];
   const origins = [...new Set(routes.map((route) => route.originName))];
   const jsonLd = {
     "@context": "https://schema.org",
@@ -36,11 +46,25 @@ export default async function RoutesIndexPage() {
   return <main className="directory-page">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
     <header className="results-nav"><a className="brand" href="/"><span>N</span>NOLU <small>by BUSSELECT</small></a><a href="/search">便を検索</a></header>
-    <section className="directory-hero"><div><nav><a href="/">ホーム</a> / 路線一覧</nav><span className="kicker">ROUTE DIRECTORY</span><h1>全国の高速バス・<br />夜行バス路線</h1><p>出発地から路線を選び、運賃だけでなく快眠性・定時性・口コミまで比較できます。</p><dl><div><dt>掲載路線</dt><dd>{routes.length}</dd></div><div><dt>出発エリア</dt><dd>{origins.length}</dd></div><div><dt>掲載便</dt><dd>{routes.reduce((sum, route) => sum + Number(route.serviceCount), 0)}</dd></div></dl></div></section>
+    <section className="directory-hero"><div><nav><a href="/">ホーム</a> / 路線一覧</nav><span className="kicker">ROUTE DIRECTORY</span><h1>全国の高速バス・<br />夜行バス路線</h1><p>出発地から路線を選び、運賃だけでなく快眠性・定時性・口コミまで比較できます。</p><dl><div><dt>掲載路線</dt><dd>{routes.length}</dd></div><div><dt>出発エリア</dt><dd>{origins.length}</dd></div><div><dt>公式GTFSダイヤ</dt><dd>{highwayRoutes.reduce((sum, route) => sum + Number(route.tripCount), 0)}</dd></div></dl></div></section>
     <section className="directory-shell">
       <div className="area-links"><h2>出発地から探す</h2>{origins.map((origin) => <a key={origin} href={`/areas/${encodeURIComponent(origin)}`}>{origin}<span>{routes.filter((route) => route.originName === origin).length}路線</span></a>)}</div>
       {origins.map((origin) => <section className="route-group" key={origin}><header><div><span className="kicker">FROM</span><h2>{origin}発</h2></div><a href={`/areas/${encodeURIComponent(origin)}`}>{origin}の全路線 →</a></header><div>{routes.filter((route) => route.originName === origin).map((route) => <a className="directory-card" key={route.id} href={`/routes/${route.id.replace(/^route-/, "")}`}><span><small>{route.originName}発</small><b>{route.destinationName}</b></span><span><small>{route.serviceCount}便掲載</small><strong>¥{Number(route.minPrice).toLocaleString()}〜</strong></span><i>→</i></a>)}</div></section>)}
-      {!routes.length && <p className="admin-empty">路線データを準備しています。</p>}
+      {!routes.length && !highwayRoutes.length && <p className="admin-empty">路線データを準備しています。</p>}
+      {highwayRoutes.length > 0 && (
+        <section className="route-group">
+          <header><div><span className="kicker">公式GTFS</span><h2>各社公式ダイヤより</h2></div></header>
+          <div>
+            {highwayRoutes.map((route) => (
+              <a className="directory-card" key={`${route.originName}-${route.destinationName}`} href={`/search?from=${encodeURIComponent(route.originName)}&to=${encodeURIComponent(route.destinationName)}`}>
+                <span><small>{route.originName}発</small><b>{route.destinationName}</b></span>
+                <span><small>{route.operators}</small><strong>{route.tripCount}便</strong></span>
+                <i>→</i>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
     </section>
   </main>;
 }

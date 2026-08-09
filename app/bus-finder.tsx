@@ -49,17 +49,10 @@ export function BusFinder({
   const [from, setFrom] = useState("東京");
   const [to, setTo] = useState("大阪");
   const [saved, setSaved] = useState<string[]>([]);
-  const [arrivalSpot, setArrivalSpot] = useState("");
 
   function goSearch(event?: { preventDefault: () => void }) {
     event?.preventDefault();
     window.location.href = `/search?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&date=2026-08-08`;
-  }
-
-  function googleMapsTransitUrl() {
-    const origin = `${to}駅`;
-    const destination = arrivalSpot.trim() || to;
-    return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=transit`;
   }
 
   return (
@@ -130,18 +123,11 @@ export function BusFinder({
       </section>
 
       <section className="onward" id="onward">
-        <div className="shell">
+        <div className="shell onward-teaser">
           <div className="section-head">
-            <div><span className="kicker">AFTER ARRIVAL</span><h2>バスを降りてからも、迷わない。</h2><p>到着地から最終目的地までの経路を、Googleマップの乗換案内で確認できます。</p></div>
+            <div><span className="kicker">AFTER ARRIVAL</span><h2>バスを降りてからも、迷わない。</h2><p>{to}到着後の路線バス・電車・地下鉄・徒歩・タクシーをまとめて検索できます。</p></div>
           </div>
-          <div className="onward-panel">
-            <div className="onward-search">
-              <label><small>到着地</small><b>{to}</b></label>
-              <span className="chevron">›</span>
-              <label><small>最終目的地</small><input value={arrivalSpot} onChange={e => setArrivalSpot(e.target.value)} placeholder={to} aria-label="最終目的地" /><span>観光地・ホテル・住所を入力（未入力の場合は到着地までの経路）</span></label>
-              <a href={googleMapsTransitUrl()} target="_blank" rel="noreferrer" className="onward-maps-button">Googleマップで経路を見る ↗</a>
-            </div>
-          </div>
+          <a className="onward-maps-button" href={`/onward?arrival=${encodeURIComponent(to)}`}>到着後のルートを検索する ↗</a>
         </div>
       </section>
 

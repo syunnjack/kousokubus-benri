@@ -1,6 +1,7 @@
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
+import { SITE_HOST } from "../lib/site";
 
 interface Env {
   ASSETS: Fetcher;
@@ -40,7 +41,16 @@ const worker = {
       }, allowedWidths);
     }
 
-    return handler.fetch(request, env, ctx);
+    const response = await handler.fetch(request, env, ctx);
+
+    // canonical は常に SITE_HOST を指すため、プレビュー用ホスト（*.chatgpt.site など）で
+    // 配信された応答はインデックスさせない。正規ドメインに DNS を向けた時点で自動的に解除される。
+    if (url.hostname !== SITE_HOST) {
+      const headers = new Headers(response.headers);
+      headers.set("X-Robots-Tag", "noindex, nofollow");
+      return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+    }
+    return response;
   },
 };
 

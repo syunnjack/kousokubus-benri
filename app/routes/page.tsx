@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getD1 } from "../../db/d1";
+import { siteUrl } from "../../lib/site";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -40,7 +41,7 @@ export default async function RoutesIndexPage() {
       "@type": "ListItem",
       position: index + 1,
       name: `${route.originName}から${route.destinationName}`,
-      url: `https://busselect.jp/routes/${route.id.replace(/^route-/, "")}`,
+      url: siteUrl(`/routes/${route.id.replace(/^route-/, "")}`),
     })),
   };
   return <main className="directory-page">

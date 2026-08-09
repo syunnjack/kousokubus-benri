@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { SITE_URL } from "../lib/site";
 import "./globals.css";
 
 const gaId = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID;
 const gscToken = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://busselect.jp"),
+  metadataBase: new URL(SITE_URL),
   title: { default: "NOLU | 高速バスを、価格だけで選ばない。", template: "%s | NOLU" },
   description: "料金・快眠度・定時性・設備・口コミを一度に比較できる、高速バスの移動品質ナビ。",
   alternates: { canonical: "/" },

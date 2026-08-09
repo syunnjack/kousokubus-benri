@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { BusFinder } from "./bus-finder";
 import { getD1 } from "../db/d1";
+import { siteUrl } from "../lib/site";
+import { todayInJst } from "../lib/jst";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +19,7 @@ const jsonLd = {
   description: "高速バス・夜行バスの移動品質比較ナビ",
   potentialAction: {
     "@type": "SearchAction",
-    target: "https://nolu-bus-navi.syunnjack.chatgpt.site/search?from={from}&to={to}",
+    target: siteUrl("/search?from={from}&to={to}"),
     "query-input": ["required name=from", "required name=to"],
   },
 };
@@ -66,6 +68,7 @@ export default async function Home() {
       />
       <BusFinder
         stats={stats}
+        today={todayInJst()}
         featuredServices={(featuredServiceResult.results || []) as never[]}
         featuredHighway={(featuredHighwayResult.results || []) as never[]}
       />

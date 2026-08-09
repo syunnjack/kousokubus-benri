@@ -1,9 +1,10 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL, siteUrl } from "../lib/site";
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [{ userAgent: "*", allow: "/", disallow: ["/admin/", "/api/"] }],
-    sitemap: "https://busselect.jp/sitemap.xml",
-    host: "https://busselect.jp",
+    sitemap: siteUrl("/sitemap.xml"),
+    host: SITE_URL,
   };
 }

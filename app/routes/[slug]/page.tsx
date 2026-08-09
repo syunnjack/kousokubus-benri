@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getD1 } from "../../../db/d1";
+import { siteUrl } from "../../../lib/site";
+import { OUTBOUND_URL_SQL, outboundLabel } from "../../../lib/outbound";
 
 export const dynamic = "force-dynamic";
 type Params = Promise<{ slug: string }>;
 type RouteRecord = { id: string; originName: string; destinationName: string; createdAt: number };
-type ServiceRow = { id: string; operatorName: string; serviceName: string; departureTime: string; arrivalTime: string; seatType: string | null; basePrice: number; sleepScore: number | null; onTimeRate: number | null; reviewScore: number | null; reviewCount: number; salesStatus: string; availableSeats: number | null; updatedAt: number };
+type ServiceRow = { id: string; operatorName: string; serviceName: string; departureTime: string; arrivalTime: string; seatType: string | null; basePrice: number; sleepScore: number | null; onTimeRate: number | null; reviewScore: number | null; reviewCount: number; salesStatus: string; availableSeats: number | null; updatedAt: number; bookingUrl: string | null; outboundUrl: string | null };
 type ReviewStats = { reviewCount: number; rating: number | null; sleep: number | null; punctuality: number | null; comfort: number | null };
 type HistoryRow = { day: string; minPrice: number; avgPrice: number; maxPrice: number; changes: number };
 
@@ -37,6 +39,7 @@ export default async function RouteDetailPage({ params }: { params: Params }) {
         s.seat_type AS seatType, s.base_price AS basePrice, s.sleep_score AS sleepScore,
         s.on_time_rate AS onTimeRate, s.sales_status AS salesStatus,
         s.available_seats AS availableSeats, s.updated_at AS updatedAt,
+        s.booking_url AS bookingUrl, ${OUTBOUND_URL_SQL} AS outboundUrl,
         ROUND(AVG(rv.rating), 1) AS reviewScore, COUNT(rv.id) AS reviewCount
       FROM services s LEFT JOIN reviews rv ON rv.service_id = s.id AND rv.status = 'published'
       WHERE s.route_id = ?1 AND s.active = 1
@@ -78,15 +81,15 @@ export default async function RouteDetailPage({ params }: { params: Params }) {
   const bands = priceBands(prices);
   const reviewSummary = makeReviewSummary(reviewStats);
   const faqs = buildFaqs(route, minPrice, maxPrice);
-  const canonical = `https://busselect.jp/routes/${slug}`;
+  const canonical = siteUrl(`/routes/${slug}`);
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
       { "@type": "WebPage", name: `${route.originName}から${route.destinationName}の高速バス比較`, url: canonical, dateModified: new Date(updatedAt).toISOString(), about: { "@type": "BusTrip", departureBusStop: { "@type": "BusStop", name: route.originName }, arrivalBusStop: { "@type": "BusStop", name: route.destinationName } } },
       { "@type": "Dataset", name: `${route.originName}〜${route.destinationName} 高速バス料金・運行データ`, description: `${rows.length}便の料金、快眠スコア、定時率、販売状況を集計`, url: canonical, dateModified: new Date(updatedAt).toISOString(), variableMeasured: ["最低運賃", "平均運賃", "最高運賃", "快眠スコア", "定時率", "残席状況"] },
       { "@type": "BreadcrumbList", itemListElement: [
-        { "@type": "ListItem", position: 1, name: "ホーム", item: "https://busselect.jp" },
-        { "@type": "ListItem", position: 2, name: "全国の路線", item: "https://busselect.jp/routes" },
+        { "@type": "ListItem", position: 1, name: "ホーム", item: siteUrl() },
+        { "@type": "ListItem", position: 2, name: "全国の路線", item: siteUrl("/routes") },
         { "@type": "ListItem", position: 3, name: `${route.originName}から${route.destinationName}` },
       ] },
       { "@type": "FAQPage", mainEntity: faqs.map((item) => ({ "@type": "Question", name: item.q, acceptedAnswer: { "@type": "Answer", text: item.a } })) },
@@ -108,7 +111,7 @@ export default async function RouteDetailPage({ params }: { params: Params }) {
         <div className="price-bands"><h3>価格帯別の便数</h3>{bands.map((band) => <div key={band.label}><span>{band.label}</span><i><em style={{ width: `${rows.length ? Math.max(4, band.count / rows.length * 100) : 0}%` }} /></i><b>{band.count}便</b></div>)}</div>
       </section>
 
-      <div className="route-table"><div className="route-table-head"><span>便・運行会社</span><span>発着時刻</span><span>移動品質</span><span>運賃・空席</span></div>{rows.map((row) => <div key={row.id}><span><small>{row.operatorName}</small><b>{row.serviceName}</b><em>{row.seatType || "座席情報確認中"}</em></span><span><b>{row.departureTime} → {row.arrivalTime}</b></span><span><b>快眠 {row.sleepScore ?? "—"}</b><small>定時率 {row.onTimeRate == null ? "—" : `${Math.round(row.onTimeRate * 100)}%`}・★{row.reviewScore ?? "—"}（{row.reviewCount}件）</small></span><span><strong>¥{Number(row.basePrice).toLocaleString()}</strong><small>{availability(row)}</small><a href={`/go/${row.id}?source=route-page`}>{row.salesStatus === "sold_out" ? "ほかの便を見る" : "予約情報"}</a></span></div>)}</div>
+      <div className="route-table"><div className="route-table-head"><span>便・運行会社</span><span>発着時刻</span><span>移動品質</span><span>運賃・空席</span></div>{rows.map((row) => <div key={row.id}><span><small>{row.operatorName}</small><b>{row.serviceName}</b><em>{row.seatType || "座席情報確認中"}</em></span><span><b>{row.departureTime} → {row.arrivalTime}</b></span><span><b>快眠 {row.sleepScore ?? "—"}</b><small>定時率 {row.onTimeRate == null ? "—" : `${Math.round(row.onTimeRate * 100)}%`}・★{row.reviewScore ?? "—"}（{row.reviewCount}件）</small></span><span><strong>¥{Number(row.basePrice).toLocaleString()}</strong><small>{availability(row)}</small>{outboundLabel(row.bookingUrl, row.outboundUrl, row.salesStatus === "sold_out") ? <a href={`/go/${row.id}?source=route-page`}>{outboundLabel(row.bookingUrl, row.outboundUrl, row.salesStatus === "sold_out")}</a> : <span className="cta-pending">連携準備中</span>}</span></div>)}</div>
 
       <section className="route-insights"><article><span className="kicker">REVIEW INSIGHT</span><h2>口コミから見る移動品質</h2><p>{reviewSummary}</p><dl><div><dt>総合</dt><dd>{formatScore(reviewStats?.rating)}</dd></div><div><dt>睡眠</dt><dd>{formatScore(reviewStats?.sleep)}</dd></div><div><dt>定時性</dt><dd>{formatScore(reviewStats?.punctuality)}</dd></div><div><dt>快適性</dt><dd>{formatScore(reviewStats?.comfort)}</dd></div></dl><small>公開済み口コミ {reviewStats?.reviewCount || 0}件を集計。件数が少ない場合は参考値です。</small></article>
         <article><span className="kicker">PRICE HISTORY</span><h2>直近90日の料金更新</h2>{historyResult.results.length ? <div className="history-mini">{historyResult.results.slice(0, 7).map((item) => <div key={item.day}><time>{item.day}</time><span>最安 ¥{Number(item.minPrice).toLocaleString()}</span><b>平均 ¥{Number(item.avgPrice).toLocaleString()}</b><small>{item.changes}件更新</small></div>)}</div> : <p>料金履歴を蓄積中です。API・CSVの更新時に価格変化を記録します。</p>}</article>

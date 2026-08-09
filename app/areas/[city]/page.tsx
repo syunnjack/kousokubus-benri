@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getD1 } from "../../../db/d1";
+import { siteUrl } from "../../../lib/site";
 
 export const dynamic = "force-dynamic";
 type Params = Promise<{ city: string }>;
@@ -36,10 +37,10 @@ export default async function AreaPage({ params }: { params: Params }) {
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      { "@type": "CollectionPage", name: `${city}発着の高速バス・夜行バス`, url: `https://busselect.jp/areas/${encodeURIComponent(city)}` },
+      { "@type": "CollectionPage", name: `${city}発着の高速バス・夜行バス`, url: siteUrl(`/areas/${encodeURIComponent(city)}`) },
       { "@type": "BreadcrumbList", itemListElement: [
-        { "@type": "ListItem", position: 1, name: "ホーム", item: "https://busselect.jp" },
-        { "@type": "ListItem", position: 2, name: "路線一覧", item: "https://busselect.jp/routes" },
+        { "@type": "ListItem", position: 1, name: "ホーム", item: siteUrl() },
+        { "@type": "ListItem", position: 2, name: "路線一覧", item: siteUrl("/routes") },
         { "@type": "ListItem", position: 3, name: city },
       ] },
     ],

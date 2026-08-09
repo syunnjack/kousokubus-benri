@@ -1,5 +1,6 @@
 import { asString, getD1, jsonError } from "../../../db/d1";
 import { fetchNavitimeRoute } from "../../../lib/transit-provider";
+import { fetchRoutePolyline, geocodePlace, type GeoPoint } from "../../../lib/geocode";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
@@ -23,9 +24,28 @@ export async function POST(request: Request) {
       ? { durationMinutes: 42, fare: 420, transferCount: 0, walkMinutes: 3 }
       : { durationMinutes: 36, fare: 420, transferCount: 1, walkMinutes: 8 };
 
+  const [startPoint, endPoint] = await Promise.all([
+    geocodePlace(arrivalStop),
+    geocodePlace(finalDestination),
+  ]);
+
+  let map: { start: GeoPoint; end: GeoPoint; coordinates: [number, number][] } | null = null;
+  if (startPoint && endPoint) {
+    const profile = preference === "low_walk" ? "foot" as const : "foot" as const;
+    const coordinates = await fetchRoutePolyline(startPoint, endPoint, profile);
+    map = { start: startPoint, end: endPoint, coordinates };
+  }
+
   await getD1().prepare(`
     INSERT INTO onward_searches (id, arrival_stop, final_destination, preference, duration_minutes, fare, transfer_count, created_at)
     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
   `).bind(crypto.randomUUID(), arrivalStop, finalDestination, preference, demo.durationMinutes, demo.fare, demo.transferCount, Date.now()).run();
-  return Response.json({ ok: true, provider, route: demo, providerItems, note: provider === "demo" ? "交通API契約情報の設定後、自動的に実データへ切り替わります。" : null });
+  return Response.json({
+    ok: true,
+    provider,
+    route: demo,
+    map,
+    providerItems,
+    note: provider === "demo" ? "交通API契約情報の設定後、自動的に実データへ切り替わります。" : null,
+  });
 }

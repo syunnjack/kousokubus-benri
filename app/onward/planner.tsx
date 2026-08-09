@@ -1,8 +1,14 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import type { GeoPoint } from "../../lib/geocode";
+import { RouteMap } from "./route-map";
 
-type RouteResult = { provider: string; route: { durationMinutes: number; fare: number; transferCount: number; walkMinutes: number } };
+type RouteResult = {
+  provider: string;
+  route: { durationMinutes: number; fare: number; transferCount: number; walkMinutes: number };
+  map?: { start: GeoPoint; end: GeoPoint; coordinates: [number, number][] } | null;
+};
 
 export function OnwardPlanner({ initialArrival }: { initialArrival: string }) {
   const [arrival, setArrival] = useState(initialArrival || "バスタ新宿");
@@ -32,6 +38,7 @@ export function OnwardPlanner({ initialArrival }: { initialArrival: string }) {
       <button disabled={loading}>{loading?"検索中…":"ルートを検索"}</button>
     </form>
     {result&&<div className="planner-result"><header><div><span className="kicker">ROUTE SUMMARY</span><h2>{arrival} → {destination}</h2></div><strong>{result.route.durationMinutes}分</strong></header><dl><div><dt>運賃目安</dt><dd>¥{result.route.fare.toLocaleString()}</dd></div><div><dt>乗換</dt><dd>{result.route.transferCount}回</dd></div><div><dt>徒歩</dt><dd>{result.route.walkMinutes}分</dd></div><div><dt>データ</dt><dd>{result.provider==="navitime"?"交通API":"概算＋外部経路"}</dd></div></dl></div>}
+    {result?.map&&<RouteMap start={result.map.start} end={result.map.end} coordinates={result.map.coordinates} />}
     <div className="transport-choice">
       <article><b>BUS</b><h2>路線バス</h2><p>登録済み4,304停留所の時刻表から、到着地周辺を確認します。</p><a href="/local-bus">停留所・時刻表を検索 →</a></article>
       <article><b>RAIL</b><h2>電車・地下鉄</h2><p>鉄道と地下鉄を含む公共交通ルートを地図アプリで開きます。</p><a href={links.transit} target="_blank" rel="noreferrer">公共交通ルート →</a></article>

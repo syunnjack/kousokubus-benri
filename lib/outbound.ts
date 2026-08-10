@@ -2,8 +2,10 @@
  * 送客先URLの解決順序を表す SQL 式。`services` を別名 `s` で JOIN しているクエリで使う。
  *
  * 1. services.booking_url … 提携予約サイト（アフィリエイト）
- * 2. 同じ事業者名で取り込んだ公式GTFSカタログの公式URL
- * 3. 同じ事業者名の GTFS agency_url
+ * 2. 事業者名が完全一致する公式GTFSカタログの公式URL
+ * 3. 事業者名が完全一致する GTFS agency_url
+ * 4-5. 上記の前方一致版。GTFS側は「三重交通(桑名営業所)」のように
+ *      営業所名が付くことがあるため、3文字以上の事業者名に限り前方一致も許す。
  *
  * いずれも無ければ NULL。UI 側は NULL のとき送客リンクを出さず、
  * 「準備中」と明示する（行き止まりのリンクを踏ませない）。
@@ -11,7 +13,13 @@
 export const OUTBOUND_URL_SQL = `COALESCE(
   s.booking_url,
   (SELECT h.official_url FROM highway_catalog h WHERE h.operator_name = s.operator_name AND h.official_url IS NOT NULL LIMIT 1),
-  (SELECT a.url FROM bus_agencies a WHERE a.name = s.operator_name AND a.url IS NOT NULL LIMIT 1)
+  (SELECT a.url FROM bus_agencies a WHERE a.name = s.operator_name AND a.url IS NOT NULL LIMIT 1),
+  (SELECT h.official_url FROM highway_catalog h
+    WHERE h.official_url IS NOT NULL AND LENGTH(s.operator_name) >= 3
+      AND (h.operator_name LIKE s.operator_name || '%' OR s.operator_name LIKE h.operator_name || '%') LIMIT 1),
+  (SELECT a.url FROM bus_agencies a
+    WHERE a.url IS NOT NULL AND LENGTH(s.operator_name) >= 3
+      AND (a.name LIKE s.operator_name || '%' OR s.operator_name LIKE a.name || '%') LIMIT 1)
 )`;
 
 /** 送客リンクのラベル。提携予約サイトか公式サイトかを利用者に明示する。 */

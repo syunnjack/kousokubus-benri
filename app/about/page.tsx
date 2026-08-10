@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
 import { SITE_URL } from "../../lib/site";
 
+// 運営者情報は環境変数で差し込む。未設定のまま「要記入」を公開しないよう、
+// 値が無い項目は「準備中」と表示する。
+const operatorName = process.env.NEXT_PUBLIC_OPERATOR_NAME;
+const operatorAddress = process.env.NEXT_PUBLIC_OPERATOR_ADDRESS;
+const operatorContact = process.env.NEXT_PUBLIC_OPERATOR_CONTACT;
+const PENDING = "準備中";
+
 export const metadata: Metadata = {
   title: "運営者情報・掲載方針",
   description: "NOLU（BUSSELECT）の運営者情報、掲載データの出典、快眠スコアと定時率の考え方、広告・アフィリエイトの開示方針をまとめています。",
@@ -21,9 +28,9 @@ export default function AboutPage() {
           <dl>
             <div><dt>サイト名</dt><dd>NOLU（by BUSSELECT）</dd></div>
             <div><dt>URL</dt><dd>{SITE_URL}</dd></div>
-            <div><dt>運営者名</dt><dd><span className="legal-todo">要記入</span> 公開前に運営者名（個人名または法人名）を記載してください。</dd></div>
-            <div><dt>所在地</dt><dd><span className="legal-todo">要記入</span> 請求があった場合に遅滞なく開示する旨の記載でも可。</dd></div>
-            <div><dt>連絡先</dt><dd><span className="legal-todo">要記入</span> 問い合わせ用のメールアドレスまたはフォームURL。</dd></div>
+            <div><dt>運営者名</dt><dd>{operatorName || PENDING}</dd></div>
+            <div><dt>所在地</dt><dd>{operatorAddress || PENDING}</dd></div>
+            <div><dt>連絡先</dt><dd>{operatorContact || PENDING}</dd></div>
           </dl>
         </section>
 
@@ -57,7 +64,7 @@ export default function AboutPage() {
 
         <section>
           <h2>お問い合わせ</h2>
-          <p>掲載内容の訂正依頼、事業者からの掲載・提携のご相談、レビューの削除依頼は上記の連絡先までご連絡ください。<span className="legal-todo">要記入</span></p>
+          <p>掲載内容の訂正依頼、事業者からの掲載・提携のご相談、レビューの削除依頼は、上記の連絡先までご連絡ください。{operatorContact ? "" : "連絡先は準備中です。"}</p>
           <p>個人情報の取り扱いは<a href="/privacy">プライバシーポリシー</a>をご確認ください。</p>
         </section>
       </div>

@@ -27,7 +27,44 @@ jobs:
         env:
           INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
         run: |
+          set -uo pipefail
           KEY="${INDEXNOW_KEY:-busselectindex2026}"
-          curl -fsS -X POST "https://api.indexnow.org/indexnow" \
-            -H "Content-Type: application/json; charset=utf-8" \
-            -d "{\"host\":\"busselect.jp\",\"key\":\"${KEY}\",\"keyLocation\":\"https://busselect.jp/${KEY}.txt\",\"urlList\":[\"https://busselect.jp/\",\"https://busselect.jp/routes\"]}"
+
+          # sitemap から実際に公開しているURLを取り出して送る。
+          # 以前は "/" と "/routes" の2件だけを直書きしていたが、
+          # 路線ページ・エリアページ・停留所ページが1万件以上あり、
+          # それらが一切通知されていなかった。
+          curl -fsS https://busselect.jp/sitemap.xml \
+            | grep -o '<loc>[^<]*</loc>' \
+            | sed 's|<loc>||; s|</loc>||' \
+            > urls.txt || true
+
+          if [ ! -s urls.txt ]; then
+            echo "sitemap を取得できなかったため、トップページのみ送信する"
+            printf 'https://busselect.jp/\n' > urls.txt
+          fi
+
+          TOTAL=$(wc -l < urls.txt)
+          echo "sitemap から ${TOTAL} URL を取得"
+
+          # IndexNow の上限は1リクエストあたり10,000URL。余裕を見て5,000ずつ送る。
+          split -l 5000 urls.txt chunk_
+          FAILED=0
+          for chunk in chunk_*; do
+            COUNT=$(wc -l < "$chunk")
+            BODY=$(jq -Rn --arg key "$KEY" \
+              --arg host "busselect.jp" \
+              --arg loc "https://busselect.jp/${KEY}.txt" \
+              '[inputs] as $urls | {host:$host, key:$key, keyLocation:$loc, urlList:$urls}' < "$chunk")
+            STATUS=$(curl -sS -o response.txt -w '%{http_code}' -X POST "https://api.indexnow.org/indexnow" \
+              -H "Content-Type: application/json; charset=utf-8" \
+              -d "$BODY")
+            echo "${chunk}: ${COUNT} URL -> HTTP ${STATUS}"
+            # 200/202 が受理。それ以外は本文を出して原因を追えるようにする。
+            case "$STATUS" in
+              200|202) ;;
+              *) echo "  $(head -c 300 response.txt)"; FAILED=1 ;;
+            esac
+          done
+
+          exit $FAILED

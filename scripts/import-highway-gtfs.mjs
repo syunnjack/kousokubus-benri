@@ -15,11 +15,14 @@ for (const row of stopTimes) {
   list.push(row); timesByTrip.set(row.trip_id, list);
 }
 const highwayPattern = /高速|夜行|ライナー|空港|エアポート|シャトル|express|highway|airport/i;
+// 語句は一致するが高速バスではないもの。高速“船”・渡船、乗合タクシー、
+// 空港敷地内の貨物循環などが highwayPattern に引っかかるため除外する。
+const excludedPattern = /高速船|フェリー|渡船|乗合タクシー|貨物/;
 const rows = [];
 for (const trip of trips) {
   const route = routeMap.get(trip.route_id); if (!route) continue;
   const descriptor = [route.route_short_name, route.route_long_name, route.route_desc, trip.trip_headsign].filter(Boolean).join(" ");
-  if (!highwayPattern.test(descriptor)) continue;
+  if (!highwayPattern.test(descriptor) || excludedPattern.test(descriptor)) continue;
   const times = (timesByTrip.get(trip.trip_id) || []).sort((a, b) => Number(a.stop_sequence) - Number(b.stop_sequence));
   if (times.length < 2) continue;
   const first = times[0], last = times[times.length - 1];

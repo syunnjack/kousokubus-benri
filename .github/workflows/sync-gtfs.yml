@@ -26,23 +26,45 @@ jobs:
           NOLU_BASE_URL: ${{ secrets.NOLU_CRON_URL }}
           NOLU_CRON_SECRET: ${{ secrets.NOLU_CRON_SECRET }}
         run: |
-          set -euo pipefail
+          # set -e は使わない。1ソースの失敗で全体を中断させず、最後にまとめて報告する。
+          set -uo pipefail
           if [ -z "${NOLU_BASE_URL:-}" ] || [ -z "${NOLU_CRON_SECRET:-}" ]; then
             echo "GTFS synchronization is prepared but not activated."
             exit 0
           fi
           mkdir -p .gtfs-sync
+          failed=""
           while IFS= read -r feed; do
             key="$(jq -r '.sourceKey' <<<"$feed")"
             url="$(jq -r '.feedUrl' <<<"$feed")"
             root=".gtfs-sync/$key"
-            echo "Synchronizing $key"
+            echo "::group::$key"
+            ok=1
             mkdir -p "$root"
-            curl --fail-with-body --location --silent --show-error --retry 3 --retry-all-errors "$url" -o "$root.zip"
-            unzip -oq "$root.zip" -d "$root"
             printf '%s' "$feed" > "$root.metadata.json"
-            node scripts/import-gtfs.mjs "$key" "$root" "$root.metadata.json"
-            if [ "$(jq -r '.highway // false' <<<"$feed")" = "true" ]; then
-              node scripts/import-highway-gtfs.mjs "$key" "$root" "$root.metadata.json"
+            if ! curl --fail-with-body --location --silent --show-error --retry 3 --retry-all-errors "$url" -o "$root.zip"; then
+              echo "$key: download failed"
+              ok=0
+            elif ! unzip -oq "$root.zip" -d "$root"; then
+              echo "$key: unzip failed"
+              ok=0
+            else
+              # localBus:false のソースは高速バス取り込み専用。stop_times の大量取り込みを
+              # 省いて同期時間とD1使用量を抑える。
+              if [ "$(jq -r '.localBus // true' <<<"$feed")" = "true" ]; then
+                node scripts/import-gtfs.mjs "$key" "$root" "$root.metadata.json" || ok=0
+              else
+                echo "$key: skipping local bus import (highway-only source)"
+              fi
+              if [ "$(jq -r '.highway // false' <<<"$feed")" = "true" ]; then
+                node scripts/import-highway-gtfs.mjs "$key" "$root" "$root.metadata.json" || ok=0
+              fi
             fi
+            [ "$ok" = "1" ] || failed="$failed $key"
+            rm -rf "$root" "$root.zip" "$root.metadata.json"
+            echo "::endgroup::"
           done < <(jq -c '.[]' data/gtfs-sources.json)
+          if [ -n "$failed" ]; then
+            echo "同期に失敗したソース:$failed"
+            exit 1
+          fi

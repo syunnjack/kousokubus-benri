@@ -52,13 +52,15 @@ jobs:
           FAILED=0
           for chunk in chunk_*; do
             COUNT=$(wc -l < "$chunk")
-            BODY=$(jq -Rn --arg key "$KEY" \
+            jq -Rn --arg key "$KEY" \
               --arg host "busselect.jp" \
               --arg loc "https://busselect.jp/${KEY}.txt" \
-              '[inputs] as $urls | {host:$host, key:$key, keyLocation:$loc, urlList:$urls}' < "$chunk")
+              '[inputs] as $urls | {host:$host, key:$key, keyLocation:$loc, urlList:$urls}' < "$chunk" > body.json
+            # 本文はコマンドライン引数では渡さない。5,000URLで ARG_MAX を超え
+            # "Argument list too long" になるため、必ずファイル経由で送る。
             STATUS=$(curl -sS -o response.txt -w '%{http_code}' -X POST "https://api.indexnow.org/indexnow" \
               -H "Content-Type: application/json; charset=utf-8" \
-              -d "$BODY")
+              --data-binary @body.json)
             echo "${chunk}: ${COUNT} URL -> HTTP ${STATUS}"
             # 200/202 が受理。それ以外は本文を出して原因を追えるようにする。
             case "$STATUS" in

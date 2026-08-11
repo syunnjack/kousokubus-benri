@@ -10,7 +10,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const busStops = await getD1().prepare("SELECT id, updated_at AS updatedAt FROM bus_stops ORDER BY updated_at DESC LIMIT 50000").all<{ id: string; updatedAt: number }>();
   return [
     { url: siteUrl(), lastModified: now, changeFrequency: "daily", priority: 1 },
-    { url: siteUrl("/search"), lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: siteUrl("/routes"), lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: siteUrl("/local-bus"), lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: siteUrl("/onward"), lastModified: now, changeFrequency: "weekly", priority: 0.85 },

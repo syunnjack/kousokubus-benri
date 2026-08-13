@@ -7,7 +7,8 @@ import { todayInJst } from "../lib/jst";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "NOLU | 高速バスを、価格だけで選ばない。",
+  title: { absolute: "NOLU | 高速バスを、価格だけで選ばない。" },
+  alternates: { canonical: "/" },
   description:
     "料金・快眠度・定時性・設備・口コミを一度に比較。あなたに合う夜行バス・高速バスを見つける移動品質ナビ。",
 };

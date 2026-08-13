@@ -8,7 +8,11 @@ type SearchParams = Promise<{ from?: string; to?: string; date?: string; passeng
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
   const query = await searchParams, from = clean(query.from, "東京"), to = clean(query.to, "大阪");
-  return { title: `${from}発 ${to}行き 高速バス比較`, description: `${from}から${to}への高速バスと、到着後の路線バス・鉄道・地下鉄・徒歩・タクシーをまとめて案内します。` };
+  return {
+    title: `${from}発 ${to}行き 高速バス比較`,
+    description: `${from}から${to}への高速バスと、到着後の路線バス・鉄道・地下鉄・徒歩・タクシーをまとめて案内します。`,
+    robots: { index: false, follow: true },
+  };
 }
 
 export default async function SearchPage({ searchParams }: { searchParams: SearchParams }) {

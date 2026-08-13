@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   openGraph: { title: "NOLU by BUSSELECT", description: "高速バスを、価格だけで選ばない。", locale: "ja_JP", type: "website", url: "/" },
   robots: { index: true, follow: true },
-  ...(gscToken ? { verification: { google: gscToken } } : {}),
+  verification: { google: "oZwpaNI66r9fBNEagYXlyEraiRbUKKuzXGJ_x2Dj3BM" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
